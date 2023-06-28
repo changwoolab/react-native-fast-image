@@ -1,6 +1,5 @@
 package com.dylanvann.fastimage;
 
-import static com.dylanvann.fastimage.FastImageRequestListener.REACT_ON_ERROR_EVENT;
 
 import androidx.annotation.NonNull;
 import android.annotation.SuppressLint;
@@ -10,7 +9,6 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
 
-import com.bumptech.glide.Glide;
 import com.bumptech.glide.RequestBuilder;
 import com.bumptech.glide.RequestManager;
 import com.bumptech.glide.load.DataSource;
@@ -21,11 +19,13 @@ import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.SimpleTarget;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
+import com.dylanvann.fastimage.events.OnErrorEvent;
+import com.dylanvann.fastimage.events.OnLoadEvent;
+import com.dylanvann.fastimage.events.OnLoadStartEvent;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.uimanager.ThemedReactContext;
-import com.facebook.react.uimanager.events.RCTEventEmitter;
+import com.facebook.react.uimanager.UIManagerHelper;
+import com.facebook.react.uimanager.events.EventDispatcher;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -90,11 +90,13 @@ class FastImageViewWithUrl extends AppCompatImageView {
 
         if (imageSource != null && imageSource.getUri().toString().length() == 0) {
             ThemedReactContext context = (ThemedReactContext) getContext();
-            RCTEventEmitter eventEmitter = context.getJSModule(RCTEventEmitter.class);
             int viewId = getId();
-            WritableMap event = new WritableNativeMap();
-            event.putString("message", "Invalid source prop:" + mSource);
-            eventEmitter.receiveEvent(viewId, REACT_ON_ERROR_EVENT, event);
+            EventDispatcher eventDispatcher =
+                    UIManagerHelper.getEventDispatcherForReactTag(context, viewId);
+            if (eventDispatcher == null) {
+                return;
+            }
+            eventDispatcher.dispatchEvent(new OnErrorEvent(viewId));
 
             // Cancel existing requests.
             clearView(requestManager);
@@ -130,9 +132,12 @@ class FastImageViewWithUrl extends AppCompatImageView {
         ThemedReactContext context = (ThemedReactContext) getContext();
         if (imageSource != null) {
             // This is an orphan even without a load/loadend when only loading a placeholder
-            RCTEventEmitter eventEmitter = context.getJSModule(RCTEventEmitter.class);
             int viewId = this.getId();
-
+            EventDispatcher eventDispatcher =
+                    UIManagerHelper.getEventDispatcherForReactTag(context, viewId);
+            if (eventDispatcher == null) {
+                return;
+            }
             // Request the URL from cache to see if it exists there and if so pass the cache
             // path as an argument in the onLoadStart event
             requestManager
@@ -142,21 +147,13 @@ class FastImageViewWithUrl extends AppCompatImageView {
                     .listener(new RequestListener<File>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<File> target, boolean isFirstResource) {
-                            WritableNativeMap result = new WritableNativeMap();
-                            result.putNull("cachePath");
-                            eventEmitter.receiveEvent(viewId,
-                                    FastImageViewManager.REACT_ON_LOAD_START_EVENT,
-                                    result);
+                            eventDispatcher.dispatchEvent(new OnLoadStartEvent(viewId, 0, 0, null));
                             return false;
                         }
 
                         @Override
                         public boolean onResourceReady(File resource, Object model, Target<File> target, DataSource dataSource, boolean isFirstResource) {
-                            WritableNativeMap result = new WritableNativeMap();
-                            result.putString("cachePath", resource.getAbsolutePath());
-                            eventEmitter.receiveEvent(viewId,
-                                    FastImageViewManager.REACT_ON_LOAD_START_EVENT,
-                                    result);
+                            eventDispatcher.dispatchEvent(new OnLoadStartEvent(viewId, 0, 0, resource.getAbsolutePath()));
                             return false;
                         }
                     })
@@ -184,21 +181,20 @@ class FastImageViewWithUrl extends AppCompatImageView {
             builder.into(this);
 
             // Used specifically to handle the `onLoad` event for the image
-            RCTEventEmitter eventEmitter = context.getJSModule(RCTEventEmitter.class);
             int viewId = this.getId();
+            EventDispatcher eventDispatcher =
+                    UIManagerHelper.getEventDispatcherForReactTag(context, viewId);
+            if (eventDispatcher == null) {
+                return;
+            }
+
             requestManager
                 .as(Size.class)
                 .load(imageSource == null ? null : imageSource.getSourceForLoad())
                 .into(new SimpleTarget<Size>() {
                     @Override
                     public void onResourceReady(@NonNull Size resource, @Nullable Transition<? super Size> transition) {
-                        WritableMap resourceData = new WritableNativeMap();
-                        resourceData.putInt("width", resource.width);
-                        resourceData.putInt("height", resource.height);
-                        eventEmitter.receiveEvent(viewId,
-                            "onFastImageLoad",
-                            resourceData
-                        );
+                        eventDispatcher.dispatchEvent(new OnLoadEvent(viewId, resource.width, resource.height));
                     }
                 });
         }

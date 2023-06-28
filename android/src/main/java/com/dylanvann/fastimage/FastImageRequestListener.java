@@ -7,16 +7,11 @@ import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.ImageViewTarget;
 import com.bumptech.glide.request.target.Target;
-import com.dylanvann.fastimage.events.OnErrorEvent;
 import com.dylanvann.fastimage.events.OnLoadEndEvent;
 import com.dylanvann.fastimage.events.OnLoadEvent;
-import com.dylanvann.fastimage.events.OnLoadStartEvent;
-import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
 import com.facebook.react.uimanager.events.EventDispatcher;
-import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 public class FastImageRequestListener implements RequestListener<Drawable> {
     static final String REACT_ON_ERROR_EVENT = "onFastImageError";

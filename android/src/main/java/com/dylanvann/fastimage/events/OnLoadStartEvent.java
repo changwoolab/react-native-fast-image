@@ -12,10 +12,13 @@ public class OnLoadStartEvent extends Event {
     private final long mBytesRead;
     private final long mExpectedLength;
 
-    public OnLoadStartEvent(int viewId, long bytesRead, long expectedLength) {
+    private final String mCachePath;
+
+    public OnLoadStartEvent(int viewId, long bytesRead, long expectedLength, String cachePath) {
         super(viewId);
         mBytesRead = bytesRead;
         mExpectedLength = expectedLength;
+        mCachePath = cachePath;
     }
 
     @Override
@@ -34,6 +37,7 @@ public class OnLoadStartEvent extends Event {
         WritableMap args = Arguments.createMap();
         args.putInt("loaded", (int) mBytesRead);
         args.putInt("total", (int) mExpectedLength);
+        args.putString("cachePath", mCachePath);
         rctEventEmitter.receiveEvent(getViewTag(), getEventName(), args);
     }
 }
