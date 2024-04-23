@@ -68,12 +68,12 @@ and
 **Note: You must be using React Native 0.60.0 or higher to use the most recent version of `react-native-fast-image`.**
 
 ```bash
-yarn add react-native-fast-image
+yarn add @changwoolab/react-native-fast-image
 cd ios && pod install
 ```
 
 ```jsx
-import FastImage from 'react-native-fast-image'
+import FastImage from '@changwoolab/react-native-fast-image'
 
 const YourImage = () => (
     <FastImage
